@@ -11,7 +11,7 @@ from .loader import DataLoader
 
 
 class PyTorchDataLoader(DataLoader):
-    """Federation Data Loader for TensorFlow Models."""
+    """Federation Data Loader for Pytorch Models."""
 
     def __init__(self, batch_size, random_seed=None, **kwargs):
         """

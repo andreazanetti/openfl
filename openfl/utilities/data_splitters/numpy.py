@@ -52,7 +52,7 @@ class EqualNumPyDataSplitter(NumPyDataSplitter):
         idx = range(len(data))
         if self.shuffle:
             idx = np.random.permutation(idx)
-        slices = np.array_split(idx, num_collaborators)
+        slices = np.array_split(idx, num_collaborators) # this split has to be extended to Graph case
         return slices
 
 

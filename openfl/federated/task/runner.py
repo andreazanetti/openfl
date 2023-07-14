@@ -17,7 +17,9 @@ from logging import getLogger
 class TaskRunner:
     """Federated Learning Task Runner Class."""
 
-    def __init__(self, data_loader, tensor_dict_split_fn_kwargs: dict = None, **kwargs):
+    def __init__(self, data_loader, tensor_dict_split_fn_kwargs: dict = None, **kwargs): 
+        # AZ data_loader here is explicit, but in calls is hidden in **kwargs.. 
+        
         """
         Intialize.
 

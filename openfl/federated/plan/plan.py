@@ -128,6 +128,7 @@ class Plan:
             #  value as the plan hash
             plan.cols_data_paths = {}
             if data_config_path is not None:
+                print("QQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQ data_config_path is: ", data_config_path)
                 data_config = open(data_config_path, 'r')
                 for line in data_config:
                     line = line.rstrip()

@@ -25,7 +25,9 @@ class FederatedModel(TaskRunner):
         loss_fn : pytorch loss_fun (only required for pytorch)
     """
 
-    def __init__(self, build_model, optimizer=None, loss_fn=None, **kwargs):
+    def __init__(self, build_model, optimizer=None, loss_fn=None, **kwargs): 
+        # AZ add a flag here to signal GNN
+        # here in **kwargs also the data loader is passed
         """Initialize.
 
         Args:
@@ -33,17 +35,23 @@ class FederatedModel(TaskRunner):
             **kwargs: Additional parameters to pass to the function
 
         """
-        super().__init__(**kwargs)
+        super().__init__(**kwargs) # AZ here the data loader is passed and referenced in the object (as per TaskRunner)
 
         self.build_model = build_model
         self.lambda_opt = None
         # TODO pass params to model
-        if inspect.isclass(build_model):
+        if inspect.isclass(build_model): 
             self.model = build_model()
-            from .runner_pt import PyTorchTaskRunner
+            # AZ here test if GNN flag is True import PYGTaskRunner 
+            # which inherits from PyTorchTaskRunner overriding necessarly some methods
+            # to support for GNN training
+            # The FederatedDataSet object is passed here in **kwargs
+            # and passed over as: self.runner = PyTorchTaskRunner(**kwargs)
+            # which for PYG support will change into self.runner = PYGTaskRunner(**kwargs) 
+            from .runner_pt import PyTorchTaskRunner # if pyg then import PYGTaskRunner
             if optimizer is not None:
                 self.optimizer = optimizer(self.model.parameters())
-            self.runner = PyTorchTaskRunner(**kwargs)
+            self.runner = PyTorchTaskRunner(**kwargs) # PYGTaskRunner has to work on a version of FederatedDataSet that supports graph data
             if hasattr(self.model, 'forward'):
                 self.runner.forward = self.model.forward
         else:

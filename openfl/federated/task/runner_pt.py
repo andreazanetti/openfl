@@ -36,7 +36,7 @@ class PyTorchTaskRunner(nn.Module, TaskRunner):
             **kwargs: Additional parameters to pass to the functions
         """
         super().__init__()
-        TaskRunner.__init__(self, **kwargs)
+        TaskRunner.__init__(self, **kwargs) # AZ here the FederatedDataSet is passed and made part of the PyTorchTaskRunner object
         if device:
             self.device = device
         else:
@@ -54,10 +54,10 @@ class PyTorchTaskRunner(nn.Module, TaskRunner):
         # child model that does not overwrite get and set tensordict) that is
         # not a numpy array
         self.tensor_dict_split_fn_kwargs.update({
-            'holdout_tensor_names': ['__opt_state_needed']
+            'holdout_tensor_names': ['__opt_state_needed']  #AZ Clarify what this is about...defined in TaskRunner
         })
 
-    def rebuild_model(self, round_num, input_tensor_dict, validation=False):
+    def rebuild_model(self, round_num, input_tensor_dict, validation=False): #AZ clarify what this does
         """
         Parse tensor names and update weights of model. Handles the optimizer treatment.
 
@@ -108,7 +108,7 @@ class PyTorchTaskRunner(nn.Module, TaskRunner):
                     target).to(self.device, dtype=pt.int64)
                 output = self(data)
                 # get the index of the max log-probability
-                pred = output.argmax(dim=1, keepdim=True)
+                pred = output.argmax(dim=1, keepdim=True)  # AZ this seems to support classification only
                 target_categorical = target.argmax(dim=1, keepdim=True)
                 val_score += pred.eq(target_categorical).sum().cpu().numpy()
 
@@ -442,7 +442,13 @@ class PyTorchTaskRunner(nn.Module, TaskRunner):
         """
         pass
 
-    def train_epoch(self, batch_generator: Iterator[Tuple[np.ndarray, np.ndarray]]) -> Metric:
+    def train_epoch(self, batch_generator: Iterator[Tuple[np.ndarray, np.ndarray]]) -> Metric: 
+        #AZ this makes me think that I could extend PyTorchTaskRunner into 
+        # something like PYGTaskRunner, override this train_epoch function
+        # and then in FederatedModel (fl_model.py) handle the case for pyg_runner
+        # Also, something must be adapted on the data loading part
+        # acting on FederatedDataSet(PyTorchDataLoader)
+        
         """Train single epoch.
 
         Override this function in order to use custom training.

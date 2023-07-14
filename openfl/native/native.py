@@ -221,7 +221,7 @@ def create_collaborator(plan, name, model, aggregator):
     return plan.get_collaborator(name, task_runner=model, client=aggregator)
 
 
-def run_experiment(collaborator_dict: dict, override_config: dict = None):
+def run_experiment(collaborator_dict: dict, override_config: dict = None): #AZ Does this function need to be modified for GNN PYG support?
     """
     Core function that executes the FL Plan.
 
@@ -292,7 +292,7 @@ def run_experiment(collaborator_dict: dict, override_config: dict = None):
     for _ in range(rounds_to_train):
         for col in plan.authorized_cols:
             collaborator = collaborators[col]
-            collaborator.run_simulation()
+            collaborator.run_simulation() # AZ here we train one collaborator at a time
 
     # Set the weights for the final model
     model.rebuild_model(

@@ -70,8 +70,8 @@ class FederatedDataSet(PyTorchDataLoader):
             num_classes = np.unique(self.y_train).shape[0]
             print(f'Inferred {num_classes} classes from the provided labels...')
         self.num_classes = num_classes
-        self.train_splitter = self._get_splitter_or_default(train_splitter)
-        self.valid_splitter = self._get_splitter_or_default(valid_splitter)
+        self.train_splitter = self._get_splitter_or_default(train_splitter) #at init time we assign the kind of splitter
+        self.valid_splitter = self._get_splitter_or_default(valid_splitter) # which will be used later on in .split method
 
     @staticmethod
     def _get_splitter_or_default(value):
@@ -99,6 +99,10 @@ class FederatedDataSet(PyTorchDataLoader):
         """
         train_idx = self.train_splitter.split(self.y_train, num_collaborators)
         valid_idx = self.valid_splitter.split(self.y_valid, num_collaborators)
+        print("MODIFIED+++++++++++++++++++++++++++++++++++++++++++++++++++++")
+        print("MODIFIED second time!!! +++++++++++++++++++++++++++++++++++++++++++++++++++++")
+        print("MODIFIED third time!!!==================================================================")
+
 
         return [
             FederatedDataSet(
