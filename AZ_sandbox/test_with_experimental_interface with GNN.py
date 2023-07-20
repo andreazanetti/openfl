@@ -2,8 +2,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 import torch
-torch.backends.cudnn.enabled = False
-
 import numpy as np
 import random
 import warnings
@@ -24,6 +22,7 @@ from torch_geometric.datasets import MoleculeNet
 from torch_geometric.loader import DataLoader
 
 # reproducibility...
+# torch.backends.cudnn.enabled = False
 def set_seed(seed):
     torch.manual_seed(seed)
     # torch.cuda.manual_seed_all(seed)
@@ -121,9 +120,8 @@ def inference(network, test_loader):
         out = network(data.x.float(), data.edge_index, data.edge_attr.float(), data.batch)
         total_error += (out - data.y).abs().sum().item()
         correct += ((out.data - data.y).abs() < 0.5).sum() # binary classification
-            
     accuracy = correct / len(test_loader.dataset)
-    print("###################### Evaluation accuracy is: ", accuracy)
+    print("###################### Eval/Test accuracy is: ", accuracy)
     return total_error / len(test_loader.dataset)
 
 # OpenFL: Averaging all parameter vectors
@@ -229,8 +227,6 @@ class FederatedFlow(FLSpec):
         write_metric("Aggregator", "train", "avg_loss", self.average_loss, self.current_round)
         print("Wrote TensorBoard information for Aggregator ")
 
-
-
         self.current_round += 1
         if self.current_round < self.rounds:
             self.next(self.aggregated_model_validation, foreach='collaborators', exclude=['private'])
@@ -280,42 +276,7 @@ flflow.runtime = local_runtime
 print("NOW CALLING .run -----------------------------------------------------------------------------------------------------")
 flflow.run()
 print(".run has finished-----------------------------------------------------------------------------------------------------")
-# print(f'Sample of the final model weights: {flflow.model.state_dict()["conv1.weight"][0]}')
 
 print(f'\nFinal aggregated model accuracy for {flflow.rounds} rounds of training: {flflow.aggregated_model_accuracy}')
-
-
-
-################################################################################################
-# flflow2 = FederatedFlow(model=flflow.model,
-#                         optimizer=flflow.optimizer,
-#                         checkpoint=True,
-#                         rounds=n_epochs)
-# flflow2.runtime = local_runtime
-# flflow2.run()
-
-# run_id = flflow2._run_id
-
-# import metaflow
-# from metaflow import Metaflow, Flow, Task, Step
-# m = Metaflow()
-# list(m)
-# f = Flow('FederatedFlow').latest_run
-
-# print(list(f))
-
-# s = Step(f'FederatedFlow/{run_id}/train')
-# print(list(s))
-
-
-# t = Task(f'FederatedFlow/{run_id}/train/9')
-# print(t)
-
-# print(t.data)
-# print(t.data.input)
-
-# print(t.stdout)
-# print(t.stderr)
-
 
 
