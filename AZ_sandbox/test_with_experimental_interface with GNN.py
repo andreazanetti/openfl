@@ -31,7 +31,6 @@ def set_seed(seed):
     # torch.backends.cudnn.benchmark = False
     np.random.seed(seed)
     random.seed(seed)
-
 set_seed(10)
 random_seed = 1
 torch.manual_seed(random_seed)
@@ -61,7 +60,7 @@ log_interval = 10
 # tensorboard
 from torch.utils.tensorboard import SummaryWriter
 import random
-unique_id = random.randint(10,200000)
+unique_id = random.randint(10,2000000) # random 'unique' id for tensorboard clarity
 writer = SummaryWriter('./logs/experimental_interface_openFL_{}_BS{}_ldata{}'.format(unique_id, BS, ldata), flush_secs=5)
 
 def write_metric(node_name, task_name, metric_name, metric, round_number):
@@ -116,10 +115,15 @@ def myloss(output, target):
 def inference(network, test_loader):
     network.eval()
     total_error = 0
+    correct = 0
     for data in test_loader:
         data = data.to(device)
         out = network(data.x.float(), data.edge_index, data.edge_attr.float(), data.batch)
-        total_error += (out - data.y).abs().sum().item() 
+        total_error += (out - data.y).abs().sum().item()
+        correct += ((out.data - data.y).abs() < 0.5).sum() # binary classification
+            
+    accuracy = correct / len(test_loader.dataset)
+    print("###################### Evaluation accuracy is: ", accuracy)
     return total_error / len(test_loader.dataset)
 
 # OpenFL: Averaging all parameter vectors
@@ -243,7 +247,7 @@ aggregator = Aggregator()
 aggregator.private_attributes = {}
 
 # Setup collaborators with private attributes
-collaborator_names = ['Coll_1', 'Coll_2'] #['Portland', 'Seattle', 'Chandler','Bangalore']
+collaborator_names = ['Coll_1', 'Coll_2']
 collaborators = [Collaborator(name=name) for name in collaborator_names]
 
 for idx, collaborator in enumerate(collaborators):
@@ -251,11 +255,11 @@ for idx, collaborator in enumerate(collaborators):
     local_test = deepcopy(test_dataset)
     test_l = len(local_test)
     train_l = len(local_train)
-    local_train = train_dataset[idx*train_l//2: (idx+1)*train_l//2] # ok only for 2 collaborators....
+    local_train = train_dataset[idx*train_l//2: (idx+1)*train_l//2] # this is ok only for 2 collaborators....
     local_test = test_dataset[idx*test_l//2: (idx+1)*test_l//2]
     collaborator.private_attributes = {
             'train_loader': DataLoader(local_train, batch_size=BS, shuffle=True),
-            'test_loader': DataLoader(local_test, batch_size=1)
+            'test_loader': DataLoader(local_test, batch_size=BS)
     }
 
 local_runtime = LocalRuntime(aggregator=aggregator, collaborators=collaborators, backend='single_process')

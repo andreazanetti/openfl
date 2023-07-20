@@ -25,8 +25,8 @@ BS = 16# 32 # 128
 epochs = 5
 log_interval = 10
 train_loader = DataLoader(train_dataset, batch_size=BS, shuffle=True)
-val_loader   = DataLoader(val_dataset, batch_size=BS)
-test_loader  = DataLoader(test_dataset, batch_size=BS)
+val_loader   = DataLoader(val_dataset, batch_size=1) #BS
+test_loader  = DataLoader(test_dataset, batch_size=1) #BS
 
 # tensorboard
 from torch.utils.tensorboard import SummaryWriter
@@ -120,10 +120,15 @@ def train(epoch):
 def test(loader):
     model.eval()
     total_error = 0
+    # correct = 0
     for data in loader:
         data = data.to(device)
         out = model(data.x.float(), data.edge_index, data.edge_attr.float(), data.batch)
-        total_error += (out.squeeze() - data.y).abs().sum().item() # * data.num_graphs: this is not correct here, but why?
+        total_error += (out.squeeze() - data.y).abs().sum().item()
+    #     if (out.data - data.y).abs() < 0.5: #BS eval = 1
+    #         correct +=1
+    # accuracy = correct / len(test_loader.dataset)
+    # print("###################### Evaluation accuracy is: ", accuracy)
     return total_error / len(loader.dataset)
 
 
