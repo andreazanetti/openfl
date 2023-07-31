@@ -9,8 +9,8 @@ from torch_geometric.nn import LayerNorm
 from torch_geometric.datasets import MoleculeNet
 from torch_geometric.loader import DataLoader
 
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
+device = 'cpu'
 path    = './data/'
 dataset = MoleculeNet(path, name='HIV').shuffle() #MoleculeNet(path, name='PCBA').shuffle()
 
@@ -21,7 +21,7 @@ val_dataset   = dataset[:N]
 test_dataset  = dataset[N:2 * N]
 train_dataset = dataset[2 * N:]
 
-BS = 32 # 128
+BS = 128 # 128
 train_loader = DataLoader(train_dataset, batch_size=BS, shuffle=True)
 val_loader   = DataLoader(val_dataset, batch_size=BS)
 test_loader  = DataLoader(test_dataset, batch_size=BS)
@@ -72,7 +72,7 @@ class GNN(torch.nn.Module):
         x = F.leaky_relu(self.lin2(x))
         x = F.dropout(x, p=0.5, training=self.training)
         x = self.lin3(x) # shape: (batch_size, out_features)
-
+        x = torch.sigmoid(x)
         return x
 
 
@@ -82,21 +82,51 @@ model = GNN(hidden=32,
             out_features=dataset[0].y.numel()).to(device)
 optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 
+# loss function definition and metrics
+def myloss(output, target):
+    return (output - target).abs().mean() 
+
+def true_pos(y_true, y_pred):
+    return (y_pred * y_true).sum()
+
+def precision(y_true, y_pred): #Precision = TruePositives / (TruePositives + FalsePositives)
+    true_positives = true_pos(y_pred, y_true)
+    predicted_positives = y_pred.sum()
+    return true_positives / (predicted_positives + 1e-8)
+
+def recall(y_true, y_pred): #Recall = TruePositives / (TruePositives + FalseNegatives)
+    true_positives = true_pos(y_pred, y_true)
+    actual_positives = y_true.sum()
+    return true_positives / (actual_positives + 1e-8)
+
+def f1_score(y_true, y_pred):
+    prec = precision(y_true, y_pred)
+    rec = recall(y_true, y_pred)
+    return 2 * (prec * rec) / (prec + rec + 1e-8)
 
 def train(epoch):
     model.train()
     total_loss = 0
     for data in train_loader:
-
         data = data.to(device)
         optimizer.zero_grad()
         out = model(data.x.float(), data.edge_index, data.edge_attr.float(), data.batch)
-        loss = (out - data.y).abs().mean() 
+        # loss = (out - data.y).abs().mean() 
+        loss = myloss(out, data.y)
         # print("loss for batch is: ", loss)
         # print("data.y.mean() is {} and out.mean() is {}".format(data.y.mean(), out.mean()))
         loss.backward()
         total_loss += loss.item() * data.num_graphs
         optimizer.step()
+        predicted_labels = (out > 0.5).float()
+        labels = data.y
+        rcll = recall(labels, predicted_labels).item()
+        prcs = precision(labels, predicted_labels).item()
+        f1sc = f1_score(labels, predicted_labels).item()
+        correct = ((out.data - data.y).abs() < 0.5).sum() # binary classification
+        accuracy = correct / len(data)
+        print("Recall: {}\nPrecision: {}\nF1_Score: {}\nAccuracy: {} ".format(rcll, prcs, f1sc, accuracy))
+
     
     return total_loss / len(train_loader.dataset)
 
